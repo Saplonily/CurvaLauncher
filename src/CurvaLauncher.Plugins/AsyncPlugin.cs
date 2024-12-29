@@ -1,5 +1,8 @@
-﻿namespace CurvaLauncher.Plugins;
+﻿using System.Diagnostics;
 
+namespace CurvaLauncher.Plugins;
+
+[DebuggerDisplay("{Name,nq}, Async")]
 public abstract class AsyncPlugin : Plugin, IAsyncPlugin
 {
     protected AsyncPlugin(CurvaLauncherContext context) : base(context)

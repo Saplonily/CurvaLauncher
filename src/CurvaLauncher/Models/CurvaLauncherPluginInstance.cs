@@ -8,14 +8,16 @@ using CurvaLauncher.PluginInteraction;
 using CurvaLauncher.Services;
 using CurvaLauncher.Utilities.Resources;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 
 namespace CurvaLauncher.Models;
 
+[DebuggerDisplay("Instance, {Plugin}")]
 public partial class CurvaLauncherPluginInstance : ObservableObject
 {
     public IPlugin Plugin { get; }
-    public Task InitTask { get; private set; } = Task.CompletedTask;
 
+    public Task InitTask { get; private set; } = Task.CompletedTask;
 
     private CurvaLauncherPluginInstance(IPlugin plugin)
     {
@@ -25,7 +27,7 @@ public partial class CurvaLauncherPluginInstance : ObservableObject
             var assembly = plugin.GetType().Assembly;
         }
 
-        if (plugin is not ISyncPlugin && plugin is not IAsyncPlugin)
+        if (plugin is not ISyncPlugin and not IAsyncPlugin)
             throw new ArgumentException("Invalid plugin", nameof(plugin));
     }
 

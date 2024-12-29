@@ -14,6 +14,11 @@ using CurvaLauncher.Models;
 using CurvaLauncher.Plugins;
 using CurvaLauncher.PluginInteraction;
 using System.Diagnostics;
+using System.Reflection.PortableExecutable;
+using System.Reflection.Metadata;
+using System.IO.Compression;
+using IOPath = System.IO.Path;
+using System.Runtime.Loader;
 
 namespace CurvaLauncher.Services;
 
@@ -50,31 +55,50 @@ public partial class PluginService
         plugins = new List<CurvaLauncherPluginInstance>();
 
         var dir = EnsurePluginDirectory();
-        var dllFiles = dir.GetFiles("*.dll");
+        var pluginFiles = dir.EnumerateFiles("*.dll").Concat(dir.EnumerateFiles("*.zip"));
 
         AppConfig config = _configService.Config;
 
-        foreach (FileInfo dllFile in dllFiles)
-            if (CoreLoadPlugin(config, dllFile.FullName, out CurvaLauncherPluginInstance? plugin))
+        foreach (FileInfo file in pluginFiles)
+            if (CoreLoadPlugin(config, file, out CurvaLauncherPluginInstance? plugin))
             {
                 plugins.Add(plugin);
             }
+
+        var alcs = AssemblyLoadContext.All;
     }
 
-    private bool CoreLoadPlugin(AppConfig config, string dllFilePath, [NotNullWhen(true)] out CurvaLauncherPluginInstance? pluginInstance)
+    private bool CoreLoadPlugin(AppConfig config, FileInfo file, [NotNullWhen(true)] out CurvaLauncherPluginInstance? pluginInstance)
     {
         pluginInstance = null;
 
         try
         {
-            var assembly = Assembly.LoadFile(dllFilePath);
-
-            Type? pluginType = assembly.ExportedTypes
-                .Where(type => type.IsAssignableTo(typeof(ISyncPlugin)) || type.IsAssignableTo(typeof(IAsyncPlugin)))
-                .FirstOrDefault();
-
-            if (pluginType == null)
+            Assembly? assembly = null;
+            if (file.Extension is ".zip")
+                assembly = CoreLoadPluginAssemblyFromZip(file);
+            else if (file.Extension is ".dll")
+                assembly = CoreLoadPluginAssemblyFromDll(file);
+            else
                 return false;
+
+            Type? pluginType = assembly.GetCustomAttribute<PluginTypeAttribute>()?.PluginType;
+
+            static bool IsPluginType(Type type)
+                => type.IsAssignableTo(typeof(ISyncPlugin)) || type.IsAssignableTo(typeof(IAsyncPlugin));
+
+            if (pluginType is not null)
+            {
+                if (!IsPluginType(pluginType))
+                    return false;
+            }
+            else
+            {
+                pluginType = assembly.ExportedTypes.FirstOrDefault(IsPluginType);
+
+                if (pluginType is null)
+                    return false;
+            }
 
             if (!CurvaLauncherPluginInstance.TryCreate(pluginType, out pluginInstance))
                 return false;
@@ -83,12 +107,12 @@ public partial class PluginService
 
             if (config.Plugins.TryGetValue(typeName, out var pluginConfig))
             {
-                var props = pluginInstance.Plugin.GetType().GetProperties()
-                        .Where(p => p.GetCustomAttribute<PluginOptionAttribute>() is not null
-                            || p.GetCustomAttribute<PluginI18nOptionAttribute>() is not null);
-
                 if (pluginConfig.Options != null)
                 {
+                    var props = pluginInstance.Plugin.GetType().GetProperties()
+                            .Where(p => p.GetCustomAttribute<PluginOptionAttribute>() is not null
+                                || p.GetCustomAttribute<PluginI18nOptionAttribute>() is not null);
+
                     foreach (var property in props)
                     {
                         if (pluginConfig.Options.TryGetPropertyValue(property.Name, out var value))
@@ -115,6 +139,53 @@ public partial class PluginService
             Debug.WriteLine($"Plugin load failed, {ex}");
             return false;
         }
+    }
+
+    private Assembly CoreLoadPluginAssemblyFromZip(FileInfo zipFile)
+    {
+        using ZipArchive zipArchive = new(zipFile.OpenRead());
+        var entries = zipArchive.Entries;
+        var rootFiles = entries.Where(e => !e.FullName.Contains('/'));
+        ZipArchiveEntry dllEntry = rootFiles.Single(e => e.Name.EndsWith(".dll"));
+        ZipArchiveEntry? pdbEntry = rootFiles.Single(e => e.FullName == $"{dllEntry.Name[..^4]}.pdb");
+
+        bool hasLibraries = zipArchive.GetEntry("Libraries/") != null;
+
+        IEnumerable<ZipArchiveEntry>? libraryEntries = null;
+        if (hasLibraries)
+            libraryEntries = entries.Where(e =>
+                IOPath.GetDirectoryName(e.FullName) is "Libraries" &&
+                e.FullName[^1] is not '/'
+            );
+
+        MemoryStream dllStream = new(checked((int)dllEntry.Length));
+        MemoryStream pdbStream = new(checked((int)pdbEntry.Length));
+        Dictionary<string, MemoryStream>? libraryStreams = null;
+
+        dllEntry.Open().CopyTo(dllStream);
+        dllStream.Seek(0, SeekOrigin.Begin);
+
+        pdbEntry?.Open().CopyTo(pdbStream);
+        pdbStream?.Seek(0, SeekOrigin.Begin);
+
+        if (hasLibraries)
+            libraryStreams = new(libraryEntries!.Select(e =>
+            {
+                string name = e.Name;
+                MemoryStream stream = new(checked((int)e.Length));
+                e.Open().CopyTo(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                return new KeyValuePair<string, MemoryStream>(e.Name, stream);
+            }));
+
+        PluginAssemblyLoadContext alc = new(zipFile.Name, libraryStreams);
+        return alc.LoadFromStream(dllStream, pdbStream);
+    }
+
+    private Assembly CoreLoadPluginAssemblyFromDll(FileInfo dllFile)
+    {
+        PluginAssemblyLoadContext alc = new(dllFile.Name, null);
+        return alc.LoadFromAssemblyPath(dllFile.FullName);
     }
 
     private void MoveCommandPluginsToTheBeginning(IList<CurvaLauncherPluginInstance> plugins)

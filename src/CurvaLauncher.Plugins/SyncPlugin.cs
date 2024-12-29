@@ -1,5 +1,8 @@
-﻿namespace CurvaLauncher.Plugins;
+﻿using System.Diagnostics;
 
+namespace CurvaLauncher.Plugins;
+
+[DebuggerDisplay("{Name,nq}, Sync")]
 public abstract class SyncPlugin : Plugin, ISyncPlugin
 {
     protected SyncPlugin(CurvaLauncherContext context) : base(context)

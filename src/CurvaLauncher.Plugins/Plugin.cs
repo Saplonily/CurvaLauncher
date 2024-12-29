@@ -1,10 +1,12 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
 
 namespace CurvaLauncher.Plugins;
 
-public abstract class Plugin: IPlugin, INotifyPropertyChanging, INotifyPropertyChanged
+[DebuggerDisplay("{Name,nq}")]
+public abstract class Plugin : IPlugin, INotifyPropertyChanging, INotifyPropertyChanged
 {
     public abstract string Name { get; }
     public abstract string Description { get; }
@@ -21,7 +23,7 @@ public abstract class Plugin: IPlugin, INotifyPropertyChanging, INotifyPropertyC
 
     protected void OnPropertyChanging([CallerMemberName] string? propertyName = null)
         => PropertyChanging?.Invoke(this, new PropertyChangingEventArgs(propertyName));
-    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null) 
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
 
