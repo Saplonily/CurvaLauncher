@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -15,12 +16,27 @@ public sealed class PluginAssemblyLoadContext : AssemblyLoadContext
     }
 
     protected override Assembly? Load(AssemblyName assemblyName)
+        => Lookup(assemblyName);
+
+    private Assembly? Lookup(AssemblyName assemblyName)
     {
         if (librariesLookup is null)
             return null;
 
-        string dllName = $"{assemblyName.Name}.dll";
-        string pdbName = $"{assemblyName.Name}.pdb";
+        string dllName;
+        string pdbName;
+
+        string? cultureName = assemblyName.CultureName;
+        if (string.IsNullOrEmpty(cultureName))
+        {
+            dllName = $"{assemblyName.Name}.dll";
+            pdbName = $"{assemblyName.Name}.pdb";
+        }
+        else
+        {
+            dllName = $"{cultureName}/{assemblyName.Name}.dll";
+            pdbName = $"{cultureName}/{assemblyName.Name}.pdb";
+        }
         librariesLookup.Remove(dllName, out MemoryStream? dllStream);
         librariesLookup.Remove(pdbName, out MemoryStream? pdbStream);
 

@@ -1,16 +1,35 @@
 <Project>
 
   <Target Name="PackPlugin" AfterTargets="AfterBuild">
+    <RemoveDir Directories="$(OutputPath)/Libraries"/>
     <ItemGroup>
-      <_LibrariesContent Include="$(OutputPath)/*" Exclude="$(OutputPath)/$(AssemblyName).dll;$(OutputPath)/$(AssemblyName).pdb"/>
+      <_LibrariesContent Include="$(OutputPath)/**" Exclude="$(OutputPath)/$(AssemblyName).dll;$(OutputPath)/$(AssemblyName).pdb"/>
     </ItemGroup>
+
     <Message Text="@(_LibrariesContent)" Importance="high"/>
-    <MakeDir Directories="$(OutputPath)/Libraries"/>
-    <Move SourceFiles="@(_LibrariesContent)" DestinationFolder="$(OutputPath)/Libraries"/>
+
+    <MakeDir Directories="$(OutputPath)/Libraries"
+             Condition="'@(_LibrariesContent)' != ''"/>
+    <Move SourceFiles="@(_LibrariesContent)"
+          DestinationFolder="$(OutputPath)/Libraries/%(RecursiveDir)"
+          Condition="'@(_LibrariesContent)' != ''"/>
+
+    <ItemGroup>
+      <_OutputFolders Include="$([System.IO.Directory]::GetDirectories('$([System.IO.Path]::GetFullPath('$(OutputPath)'))'))" />
+      <_OutputFoldersExcluded Include="@(_OutputFolders->'%(Identity)')"
+                              Condition="'$([System.IO.Path]::GetFileName(%(Identity)))' != 'Libraries'" />
+    </ItemGroup>
+
+    <RemoveDir Directories="@(_OutputFoldersExcluded)"/>
+
+    <PropertyGroup>
+      <ZipFileDestination Condition="'$(ZipFileDestination)' == ''">$(CurvaLauncherPath)/Plugins/$(AssemblyName).zip</ZipFileDestination>
+    </PropertyGroup>
+
     <ZipDirectory
       Condition="$(NoZipOutputPlugin) != 'true'"
       SourceDirectory="$(OutputPath)"
-      DestinationFile="$(CurvaLauncherPath)/Plugins/$(AssemblyName).zip"
+      DestinationFile="$(ZipFileDestination)"
       Overwrite="true"
       />
   </Target>

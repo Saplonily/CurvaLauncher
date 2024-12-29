@@ -22,16 +22,17 @@
 
 
   <Target Name="CopyFSharpCore" AfterTargets="Build">
-    <Copy SourceFiles="$(OutDir)\FSharp.Core.dll" DestinationFiles="..\..\CurvaLauncher\bin\$(Configuration)\$(TargetFramework)\Libraries\FSharp.Core.dll"></Copy>
-  </Target>
-
-  <Target Name="CopyOutputDebug" AfterTargets="Build" Condition="'$(Configuration)'=='Debug'">
-    <Copy SourceFiles="$(OutDir)\$(MSBuildProjectName).dll" DestinationFiles="..\..\CurvaLauncher\bin\$(Configuration)\$(TargetFramework)\Plugins\$(MSBuildProjectName).dll"></Copy>
-    <Copy SourceFiles="$(OutDir)\$(MSBuildProjectName).pdb" DestinationFiles="..\..\CurvaLauncher\bin\$(Configuration)\$(TargetFramework)\Plugins\$(MSBuildProjectName).pdb"></Copy>
-  </Target>
-
-  <Target Name="CopyOutputRelease" AfterTargets="Build" Condition="'$(Configuration)'=='Release'">
-    <Copy SourceFiles="$(OutDir)\$(MSBuildProjectName).dll" DestinationFiles="..\..\CurvaLauncher\bin\$(Configuration)\$(TargetFramework)\AdditionalPlugins\$(MSBuildProjectName).dll"></Copy>
+    <Copy SourceFiles="$(OutDir)\FSharp.Core.dll"
+          DestinationFiles="$(OutDir)\zip\Libraries\FSharp.Core.dll"/>
+    <Copy SourceFiles="$(OutDir)\$(MSBuildProjectName).dll"
+          DestinationFiles="$(OutDir)\zip\$(MSBuildProjectName).dll"/>
+    <Copy SourceFiles="$(OutDir)\$(MSBuildProjectName).pdb"
+          DestinationFiles="$(OutDir)\zip\$(MSBuildProjectName).pdb"
+          Condition="'$(Configuration)'=='Debug'"
+          />
+    <ZipDirectory SourceDirectory="$(OutDir)\zip" 
+                  DestinationFile="..\..\CurvaLauncher\bin\$(Configuration)\$(TargetFramework)\Plugins\$(MSBuildProjectName).zip"
+                  Overwrite="true"/>
   </Target>
 
 </Project>

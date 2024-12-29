@@ -19,6 +19,7 @@ namespace CurvaLauncher.Services
 
         private readonly IServiceProvider _serviceProvider;
         private readonly ConfigService _configService;
+        private readonly List<CultureInfo> _currentUICultureChain;
 
         private ResourceDictionary? _loadedDictionary;
         readonly Dictionary<CultureInfo, ResourceDictionary> _resourceDictionaries = new()
@@ -32,12 +33,24 @@ namespace CurvaLauncher.Services
 
         readonly Dictionary<Assembly, I18nResourceDictionaries> _assemblyResourceDictionaries = new();
 
+        public IReadOnlyList<CultureInfo> CurrentUICultureChain => _currentUICultureChain;
+
         public I18nService(
             IServiceProvider serviceProvider,
             ConfigService configService)
         {
             _serviceProvider = serviceProvider;
             _configService = configService;
+
+            List<CultureInfo> currentCultureChain = new(4);
+            var currentCulture = CultureInfo.CurrentUICulture;
+            do
+            {
+                currentCultureChain.Add(currentCulture);
+                currentCulture = currentCulture.Parent;
+            }
+            while (!string.IsNullOrEmpty(currentCulture.Name));
+            _currentUICultureChain = currentCultureChain;
         }
 
         private ResourceDictionary? GetMatchedResourceDictionary(CultureInfo cultureInfo, Dictionary<CultureInfo, ResourceDictionary> resourceDictionaries)

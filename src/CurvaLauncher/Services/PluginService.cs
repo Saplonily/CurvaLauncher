@@ -19,6 +19,8 @@ using System.Reflection.Metadata;
 using System.IO.Compression;
 using IOPath = System.IO.Path;
 using System.Runtime.Loader;
+using System.Globalization;
+using System.Resources;
 
 namespace CurvaLauncher.Services;
 
@@ -26,6 +28,7 @@ public partial class PluginService
 {
     private readonly PathService _pathService;
     private readonly ConfigService _configService;
+    private readonly I18nService _i18NService;
 
     public string Path { get; set; } = "Plugins";
 
@@ -33,10 +36,12 @@ public partial class PluginService
 
     public PluginService(
         PathService pathService,
-        ConfigService configService)
+        ConfigService configService,
+        I18nService i18nService)
     {
         _pathService = pathService;
         _configService = configService;
+        _i18NService = i18nService;
     }
 
 
@@ -151,10 +156,20 @@ public partial class PluginService
 
         IEnumerable<ZipArchiveEntry>? libraryEntries = null;
         if (hasLibraries)
+        {
             libraryEntries = entries.Where(e =>
-                IOPath.GetDirectoryName(e.FullName) is "Libraries" &&
+                e.FullName.StartsWith("Libraries/") &&
                 e.FullName[^1] is not '/' // bandzip 在打包 zip 时会将目录本身也写成一个 entry
             );
+            libraryEntries = libraryEntries.Where(e =>
+            {
+                if (e.FullName.AsSpan().Count('/') == 2)
+                {
+                    return _i18NService.CurrentUICultureChain.Any(c => e.FullName.Split('/')[1] == c.Name);
+                }
+                return true;
+            });
+        }
 
         MemoryStream dllStream = new(checked((int)dllEntry.Length));
         MemoryStream pdbStream = new(checked((int)pdbEntry.Length));
@@ -169,11 +184,11 @@ public partial class PluginService
         if (hasLibraries)
             libraryStreams = new(libraryEntries!.Select(e =>
             {
-                string name = e.Name;
+                string name = e.FullName["Libraries/".Length..];
                 MemoryStream stream = new(checked((int)e.Length));
                 e.Open().CopyTo(stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                return new KeyValuePair<string, MemoryStream>(e.Name, stream);
+                return new KeyValuePair<string, MemoryStream>(name, stream);
             }));
 
         PluginAssemblyLoadContext alc = new(zipFile.Name, libraryStreams);
