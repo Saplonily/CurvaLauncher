@@ -1,0 +1,18 @@
+<Project>
+
+  <Target Name="PackPlugin" AfterTargets="AfterBuild">
+    <ItemGroup>
+      <_LibrariesContent Include="$(OutputPath)/*" Exclude="$(OutputPath)/$(AssemblyName).dll;$(OutputPath)/$(AssemblyName).pdb"/>
+    </ItemGroup>
+    <Message Text="@(_LibrariesContent)" Importance="high"/>
+    <MakeDir Directories="$(OutputPath)/Libraries"/>
+    <Move SourceFiles="@(_LibrariesContent)" DestinationFolder="$(OutputPath)/Libraries"/>
+    <ZipDirectory
+      Condition="$(NoZipOutputPlugin) != 'true'"
+      SourceDirectory="$(OutputPath)"
+      DestinationFile="$(CurvaLauncherPath)/Plugins/$(AssemblyName).zip"
+      Overwrite="true"
+      />
+  </Target>
+
+</Project>

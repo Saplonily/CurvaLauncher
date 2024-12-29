@@ -1,0 +1,46 @@
+{
+    "$schema": "http://json.schemastore.org/template",
+    "author": "OrgEleCho",
+    "classifications": [
+        "Plugin"
+    ],
+    "identity": "CurvaLauncher.Plugin",
+    "name": "CurvaLauncher Plugin",
+    "shortName": "curvaplugin",
+    "sourceName": "MyCurvaLauncherPlugin",
+    "preferNameDirectory": true,
+    "tags": {
+        "language": "C#",
+        "type": "project"
+    },
+    "symbols": {
+        "CurvaLauncherProject": {
+            "type": "parameter",
+            "datatype": "text",
+            "replaces": "$(TemplateCurvaLauncherProject)",
+            "defaultValue": "../CurvaLauncher",
+            "displayName": "Path to CurvaLauncher project"
+        },
+        "CurvaLauncherPath": {
+            "type": "parameter",
+            "datatype": "text",
+            "replaces": "$(TemplateCurvaLauncherPath)",
+            "defaultValue": "../CurvaLauncher/build",
+            "displayName": "Path to CurvaLauncher executable folder"
+        }
+    },
+    "sources": [
+        {
+            "exclude": [
+                ".template.config/**",
+                ".vs/**",
+                "bin/**",
+                "obj/**"
+            ],
+            "copyOnly": [
+                "CurvaLauncher.props",
+                "CurvaLauncher.targets"
+            ]
+        }
+    ]
+}

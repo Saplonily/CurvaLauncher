@@ -1,0 +1,35 @@
+<Project>
+
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <RuntimeIdentifier>win</RuntimeIdentifier>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+
+    <CurvaLauncherProject>../../</CurvaLauncherProject>
+    <CurvaLauncherPath>../../build</CurvaLauncherPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="$(CurvaLauncherProject)/src/CurvaLauncher.Plugins/CurvaLauncher.Plugins.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(CurvaLauncherProject)/src/CurvaLauncher.Common/CurvaLauncher.Common.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="CurvaLauncher.props">
+      <Visible>false</Visible>
+    </None>
+    <None Include="CurvaLauncher.targets">
+      <Visible>false</Visible>
+    </None>
+    <None Include="publishToZip.ps1">
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+  
+</Project>

@@ -64,8 +64,6 @@ public partial class PluginService
             {
                 plugins.Add(plugin);
             }
-
-        var alcs = AssemblyLoadContext.All;
     }
 
     private bool CoreLoadPlugin(AppConfig config, FileInfo file, [NotNullWhen(true)] out CurvaLauncherPluginInstance? pluginInstance)
@@ -149,13 +147,13 @@ public partial class PluginService
         ZipArchiveEntry dllEntry = rootFiles.Single(e => e.Name.EndsWith(".dll"));
         ZipArchiveEntry? pdbEntry = rootFiles.Single(e => e.FullName == $"{dllEntry.Name[..^4]}.pdb");
 
-        bool hasLibraries = zipArchive.GetEntry("Libraries/") != null;
+        bool hasLibraries = zipArchive.Entries.Any(e => e.FullName.StartsWith("Libraries/"));
 
         IEnumerable<ZipArchiveEntry>? libraryEntries = null;
         if (hasLibraries)
             libraryEntries = entries.Where(e =>
                 IOPath.GetDirectoryName(e.FullName) is "Libraries" &&
-                e.FullName[^1] is not '/'
+                e.FullName[^1] is not '/' // bandzip 在打包 zip 时会将目录本身也写成一个 entry
             );
 
         MemoryStream dllStream = new(checked((int)dllEntry.Length));

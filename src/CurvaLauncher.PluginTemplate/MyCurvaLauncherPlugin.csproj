@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="CurvaLauncher.props" />
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>CurvaLauncher.Plugins.MyCurvaLauncherPlugin</RootNamespace>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <CurvaLauncherProject>$(TemplateCurvaLauncherProject)</CurvaLauncherProject>
+    <CurvaLauncherPath>$(TemplateCurvaLauncherPath)</CurvaLauncherPath>
+  </PropertyGroup>
+  
+  <Import Project="CurvaLauncher.targets" />
+
+</Project>
